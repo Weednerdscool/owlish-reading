@@ -126,6 +126,12 @@
   .printbar button{font-family:"IBM Plex Mono",monospace;font-size:13px;cursor:pointer;border:none;
     background:var(--ink);color:var(--paper);padding:12px 18px;border-radius:999px;box-shadow:var(--shadow)}
 
+  .voicebar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0 0;
+    font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--muted);letter-spacing:.04em}
+  .voicebar label{text-transform:uppercase;letter-spacing:.12em}
+  .voicebar select{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--ink);
+    background:#fff;border:1px solid var(--line);border-radius:8px;padding:7px 10px;max-width:60%}
+
   .note{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted);text-align:center;margin-top:30px;letter-spacing:.03em}
 
   @media print{
@@ -155,6 +161,11 @@
     <button class="tab" data-l="C2" onclick="show('C2')">C2</button>
   </nav>
 
+  <div class="voicebar">
+    <label for="voiceSelect">Voice</label>
+    <select id="voiceSelect" onchange="onVoiceChange()"><option>Loading voice…</option></select>
+  </div>
+
   <!-- ============ A1 ============ -->
   <section class="panel active" id="panel-A1" style="--accent:#c2603a;--accent-soft:#f2e1d7">
     <span class="levelbadge">A1 · Beginner</span>
@@ -167,7 +178,7 @@
           <button class="spd" data-s="0.7" onclick="setSpeed('A1',0.7)">0.7×</button>
           <button class="spd active" data-s="0.85" onclick="setSpeed('A1',0.85)">0.85×</button>
           <button class="spd" data-s="1" onclick="setSpeed('A1',1)">1×</button>
-          <button class="spd" data-s="1.25" onclick="setSpeed('A1',1.25)">1.25×</button>
+          <button class="spd" data-s="1.10" onclick="setSpeed('A1',1.10)">1.10×</button>
         </div>
       </div>
       <div class="status" id="status-A1">Press Play to listen and read along.</div>
@@ -212,7 +223,7 @@
           <button class="spd" data-s="0.7" onclick="setSpeed('A2',0.7)">0.7×</button>
           <button class="spd active" data-s="0.85" onclick="setSpeed('A2',0.85)">0.85×</button>
           <button class="spd" data-s="1" onclick="setSpeed('A2',1)">1×</button>
-          <button class="spd" data-s="1.25" onclick="setSpeed('A2',1.25)">1.25×</button>
+          <button class="spd" data-s="1.10" onclick="setSpeed('A2',1.10)">1.10×</button>
         </div>
       </div>
       <div class="status" id="status-A2">Press Play to listen and read along.</div>
@@ -260,7 +271,7 @@
           <button class="spd" data-s="0.7" onclick="setSpeed('B1',0.7)">0.7×</button>
           <button class="spd active" data-s="0.85" onclick="setSpeed('B1',0.85)">0.85×</button>
           <button class="spd" data-s="1" onclick="setSpeed('B1',1)">1×</button>
-          <button class="spd" data-s="1.25" onclick="setSpeed('B1',1.25)">1.25×</button>
+          <button class="spd" data-s="1.10" onclick="setSpeed('B1',1.10)">1.10×</button>
         </div>
       </div>
       <div class="status" id="status-B1">Press Play to listen and read along.</div>
@@ -310,7 +321,7 @@
           <button class="spd" data-s="0.7" onclick="setSpeed('C1',0.7)">0.7×</button>
           <button class="spd active" data-s="0.85" onclick="setSpeed('C1',0.85)">0.85×</button>
           <button class="spd" data-s="1" onclick="setSpeed('C1',1)">1×</button>
-          <button class="spd" data-s="1.25" onclick="setSpeed('C1',1.25)">1.25×</button>
+          <button class="spd" data-s="1.10" onclick="setSpeed('C1',1.10)">1.10×</button>
         </div>
       </div>
       <div class="status" id="status-C1">Press Play to listen and read along.</div>
@@ -363,7 +374,7 @@
           <button class="spd" data-s="0.7" onclick="setSpeed('C2',0.7)">0.7×</button>
           <button class="spd active" data-s="0.85" onclick="setSpeed('C2',0.85)">0.85×</button>
           <button class="spd" data-s="1" onclick="setSpeed('C2',1)">1×</button>
-          <button class="spd" data-s="1.25" onclick="setSpeed('C2',1.25)">1.25×</button>
+          <button class="spd" data-s="1.10" onclick="setSpeed('C2',1.10)">1.10×</button>
         </div>
       </div>
       <div class="status" id="status-C2">Press Play to listen and read along.</div>
@@ -498,6 +509,8 @@
     const u = new SpeechSynthesisUtterance(text);
     u.rate = state[l].rate;
     u.lang = 'en-US';
+    const chosen = currentVoice();
+    if(chosen){ u.voice = chosen; u.lang = chosen.lang; }
 
     u.onboundary = (e)=>{
       if(e.name && e.name!=='word') return;
@@ -559,8 +572,48 @@
     document.getElementById('status-'+l).textContent='Stopped. Press Play to start again.';
   }
 
-  // preload voices
-  window.speechSynthesis.onvoiceschanged = ()=>{};
+  // ---- Voice list: Google voices only ----
+  let voiceURI = null;
+  function englishVoices(){
+    return window.speechSynthesis.getVoices().filter(v=>/^en[-_]?/i.test(v.lang));
+  }
+  function listedVoices(){
+    const en = englishVoices();
+    const google = en.filter(v=>/google/i.test(v.name));
+    return google.length ? google : en;  // fall back to all English if a device has no Google voice
+  }
+  function pickDefault(voices){
+    return voices.find(v=>/google us english/i.test(v.name)) || voices[0] || null;
+  }
+  function populateVoices(){
+    const sel = document.getElementById('voiceSelect');
+    if(!sel) return;
+    const voices = listedVoices();
+    if(!voices.length){ sel.innerHTML='<option>No voice found</option>'; return; }
+    let saved=null; try{ saved=localStorage.getItem('owlishVoice'); }catch(e){}
+    if(saved && voices.some(v=>v.voiceURI===saved)) voiceURI=saved;
+    if(!voiceURI || !voices.some(v=>v.voiceURI===voiceURI)){
+      const d=pickDefault(voices); voiceURI = d ? d.voiceURI : voices[0].voiceURI;
+    }
+    sel.innerHTML='';
+    voices.forEach(v=>{
+      const o=document.createElement('option');
+      o.value=v.voiceURI; o.textContent=v.name;
+      if(v.voiceURI===voiceURI) o.selected=true;
+      sel.appendChild(o);
+    });
+  }
+  function onVoiceChange(){
+    voiceURI = document.getElementById('voiceSelect').value;
+    try{ localStorage.setItem('owlishVoice', voiceURI); }catch(e){}
+  }
+  function currentVoice(){ return englishVoices().find(v=>v.voiceURI===voiceURI) || null; }
+
+  // voices load asynchronously — populate as soon as they arrive
+  window.speechSynthesis.onvoiceschanged = populateVoices;
+  populateVoices();
+  setTimeout(populateVoices, 400);
+  setTimeout(populateVoices, 1200);
   // stop speech if user closes/navigates
   window.addEventListener('beforeunload', ()=>window.speechSynthesis.cancel());
 </script>
