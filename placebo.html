@@ -130,6 +130,13 @@
   .printbar button{font-family:"IBM Plex Mono",monospace;font-size:13px;cursor:pointer;border:none;
     background:var(--ink);color:var(--paper);padding:12px 18px;border-radius:999px;box-shadow:var(--shadow)}
 
+  .backlink{display:inline-flex;align-items:center;gap:7px;font-family:"IBM Plex Mono",monospace;
+    font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-decoration:none;
+    transition:color .15s ease}
+  .backlink:hover{color:var(--ink)}
+  .backlink.top{margin:24px 0 -6px}
+  .backtolib{text-align:center;margin-top:36px}
+
   .note{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted);text-align:center;margin-top:30px;letter-spacing:.03em}
 
   @media print{
@@ -145,6 +152,8 @@
 </head>
 <body>
 <div class="wrap">
+
+  <a class="backlink top" href="index.html">&larr; Reading Library</a>
 
   <header class="mast">
     <div class="brand">Owlish English &nbsp;&middot;&nbsp; Graded Reading</div>
@@ -246,6 +255,8 @@
     <b>Original graded reading by Owlish English.</b> These passages were written as teaching material for English-language learners. They explain the placebo effect, its neurobiology, and the ethical and philosophical questions it raises about healing. The content is original and not reproduced from any external publication.
   </div>
 
+  <div class="backtolib"><a class="backlink" href="index.html">&larr; Back to the Reading Library</a></div>
+
   <div class="note">Tip: open this file in Chrome or Edge for the most natural speech. Listening reads only the currently selected level.</div>
 
 </div>
@@ -254,165 +265,113 @@
 
 <script>
   const LEVELS = ["A2","B1","C1"];
+  let current = LEVELS[0];
   const state = {};
-  LEVELS.forEach(l => state[l] = { playing:false, rate:0.85, idx:0, words:null });
-  let current = "A2";
+  LEVELS.forEach(function(l){ state[l] = { rate:0.85, chunks:[], ci:0, playing:false, paused:false, u:null }; });
 
   function show(l){
     if(current !== l) stop(current);
     current = l;
-    LEVELS.forEach(x=>{
-      document.getElementById("panel-"+x).classList.toggle("active", x===l);
-      document.querySelector('.tab[data-l="'+x+'"]').classList.toggle("active", x===l);
+    LEVELS.forEach(function(x){
+      document.getElementById('panel-'+x).classList.toggle('active', x===l);
+      document.querySelector('.tab[data-l="'+x+'"]').classList.toggle('active', x===l);
     });
   }
 
-  function setSpeed(l, s){
-    state[l].rate = s;
-    document.querySelectorAll('#panel-'+l+' .spd').forEach(b=>{
-      b.classList.toggle('active', parseFloat(b.dataset.s)===s);
+  // ---- Voice: prefer an English Google voice (natural in Chrome); never force a robotic one ----
+  let lockedVoice = null;
+  function resolveVoice(){
+    var v = window.speechSynthesis.getVoices();
+    var isEn = function(x){ return x.lang && x.lang.toLowerCase().indexOf('en')===0; };
+    lockedVoice =
+         v.find(function(x){ return isEn(x) && /google/i.test(x.name); })
+      || v.find(function(x){ return isEn(x) && /natural|neural|online/i.test(x.name); })
+      || v.find(isEn)
+      || null;
+  }
+  window.speechSynthesis.onvoiceschanged = resolveVoice;
+  resolveVoice(); setTimeout(resolveVoice,300); setTimeout(resolveVoice,1200);
+
+  function setBtn(l, mode){
+    var b = document.getElementById('play-'+l); if(!b) return;
+    b.innerHTML = mode==='pause' ? '\u275A\u275A Pause' : (mode==='resume' ? '\u25B6 Resume' : '\u25B6 Play');
+  }
+  function setStatus(l, t){ var s = document.getElementById('status-'+l); if(s) s.textContent = t; }
+  function nowReading(l){ return 'Voice: ' + (lockedVoice?lockedVoice.name:'browser default') + '  \u00B7  ' + state[l].rate + '\u00D7'; }
+
+  // Split the article into short sentence-sized chunks (avoids the browser long-text cutoff)
+  function getChunks(l){
+    var raw = document.getElementById('article-'+l).innerText.replace(/\s+/g,' ').trim();
+    var parts = raw.match(/[^.!?]+[.!?]*/g) || [raw];
+    var chunks = [], buf = '';
+    parts.forEach(function(p){
+      p = p.trim(); if(!p) return;
+      if((buf + ' ' + p).trim().length > 180){ if(buf) chunks.push(buf.trim()); buf = p; }
+      else { buf = buf ? buf + ' ' + p : p; }
     });
-    if(state[l].playing){ // restart at new speed from current sentence start
-      const resumeFrom = state[l].idx;
-      stop(l);
-      start(l, resumeFrom);
-    }
+    if(buf) chunks.push(buf.trim());
+    return chunks;
   }
 
-  function wrapWords(l){
-    const c = document.getElementById('article-'+l);
-    if(c.dataset.wrapped) return;
-    const walker = document.createTreeWalker(c, NodeFilter.SHOW_TEXT, null);
-    const nodes = [];
-    let n; while(n = walker.nextNode()){ if(n.textContent.trim()) nodes.push(n); }
-    nodes.forEach(tn=>{
-      const frag = document.createDocumentFragment();
-      tn.textContent.split(/(\s+)/).forEach(part=>{
-        if(/\S/.test(part)){
-          const sp=document.createElement('span');
-          sp.className='tts-word'; sp.textContent=part;
-          frag.appendChild(sp);
-        } else { frag.appendChild(document.createTextNode(part)); }
-      });
-      tn.parentNode.replaceChild(frag, tn);
-    });
-    c.dataset.wrapped="1";
-    state[l].words = Array.from(c.querySelectorAll('.tts-word'));
-  }
-
-  function buildText(l){
-    // join word spans into a single string; track char offsets -> word index
-    const words = state[l].words;
-    let text=""; const offsets=[];
-    words.forEach((w,i)=>{
-      offsets.push(text.length);
-      text += w.textContent + " ";
-    });
-    state[l].offsets = offsets;
-    return text.trim();
-  }
-
-  function clearHL(l){
-    if(state[l].words) state[l].words.forEach(w=>w.classList.remove('reading'));
-  }
-
-  function start(l, fromIdx){
-    if(!('speechSynthesis' in window)){
-      document.getElementById('status-'+l).textContent='Sorry — your browser does not support speech. Try Chrome or Edge.';
-      return;
-    }
-    wrapWords(l);
-    const full = buildText(l);
-    const words = state[l].words;
-    const offsets = state[l].offsets;
-    const startIdx = fromIdx || 0;
-    const startChar = offsets[startIdx] || 0;
-    const text = full.slice(startChar);
-
-    const u = new SpeechSynthesisUtterance(text);
-    u.rate = state[l].rate;
-    u.lang = 'en-US';
+  function speakFrom(l, i){
+    var chunks = state[l].chunks;
+    if(i >= chunks.length){ finish(l); return; }
+    state[l].ci = i;
+    var u = new SpeechSynthesisUtterance(chunks[i]);
+    u.rate = state[l].rate; u.lang = 'en-US';
     resolveVoice();
     if(lockedVoice){ u.voice = lockedVoice; u.lang = lockedVoice.lang; }
-
-    u.onboundary = (e)=>{
-      if(e.name && e.name!=='word') return;
-      const abs = startChar + e.charIndex;
-      // find current word index
-      let i = state[l].idx;
-      while(i < offsets.length-1 && offsets[i+1] <= abs) i++;
-      while(i > 0 && offsets[i] > abs) i--;
-      clearHL(l);
-      if(words[i]){ words[i].classList.add('reading'); state[l].idx = i;
-        words[i].scrollIntoView({block:'nearest', behavior:'smooth'}); }
-    };
-    u.onend = ()=>{
-      state[l].playing=false; state[l].idx=0; clearHL(l);
-      document.getElementById('play-'+l).innerHTML='▶ Play';
-      document.getElementById('status-'+l).textContent='Finished. Press Play to read again.';
-    };
-    u.onerror = ()=>{
-      state[l].playing=false;
-      document.getElementById('play-'+l).innerHTML='▶ Play';
-      document.getElementById('status-'+l).textContent='Playback stopped.';
-    };
-
-    window.speechSynthesis.cancel();
-    state[l].utter = u;
-    state[l].playing = true;
-    state[l].idx = startIdx;
+    u.onend = function(){ if(state[l].playing && !state[l].paused) speakFrom(l, i+1); };
+    u.onerror = function(){ if(state[l].playing && !state[l].paused) speakFrom(l, i+1); };
+    state[l].u = u;
     window.speechSynthesis.speak(u);
-    document.getElementById('play-'+l).innerHTML='❚❚ Pause';
-    document.getElementById('status-'+l).textContent='Voice: '+(lockedVoice?lockedVoice.name:'browser default (no Google voice found)')+'  ·  '+state[l].rate+'×';
   }
 
-  function pause(l){
-    window.speechSynthesis.pause();
-    state[l].playing=false;
-    document.getElementById('play-'+l).innerHTML='▶ Resume';
-    document.getElementById('status-'+l).textContent='Paused.';
+  function start(l){
+    window.speechSynthesis.cancel();
+    LEVELS.forEach(function(x){ state[x].playing=false; state[x].paused=false; });
+    state[l].chunks = getChunks(l);
+    if(!state[l].chunks.length){ setStatus(l,'Nothing to read.'); return; }
+    state[l].playing = true; state[l].paused = false;
+    setBtn(l,'pause'); setStatus(l, nowReading(l));
+    setTimeout(function(){ speakFrom(l, 0); }, 60);
   }
 
-  // Re-bind Resume: if paused, resume; speechSynthesis.resume works in most browsers
-  function realResume(l){
-    if(window.speechSynthesis.paused){ window.speechSynthesis.resume(); state[l].playing=true;
-      document.getElementById('play-'+l).innerHTML='❚❚ Pause';
-      document.getElementById('status-'+l).textContent='Playing at '+state[l].rate+'× — reading along.';
-    } else { start(l, state[l].idx); }
+  function finish(l){
+    state[l].playing=false; state[l].paused=false; state[l].ci=0;
+    setBtn(l,'play'); setStatus(l,'Finished. Press Play to read again.');
   }
 
-  // Override toggle to handle resume cleanly
   function toggle(l){
-    if(state[l].playing){ pause(l); }
-    else if(window.speechSynthesis.paused){ realResume(l); }
-    else { start(l); }
+    if(state[l].playing && !state[l].paused){
+      window.speechSynthesis.pause(); state[l].paused=true; setBtn(l,'resume'); setStatus(l,'Paused.');
+    } else if(state[l].playing && state[l].paused){
+      window.speechSynthesis.resume(); state[l].paused=false; setBtn(l,'pause'); setStatus(l, nowReading(l));
+    } else {
+      start(l);
+    }
   }
 
   function stop(l){
     window.speechSynthesis.cancel();
-    state[l].playing=false; state[l].idx=0; clearHL(l);
-    document.getElementById('play-'+l).innerHTML='▶ Play';
-    document.getElementById('status-'+l).textContent='Stopped. Press Play to start again.';
+    state[l].playing=false; state[l].paused=false; state[l].ci=0;
+    setBtn(l,'play'); setStatus(l,'Stopped. Press Play to start again.');
   }
 
-  // ---- Voice: no menu. Auto-prefers a natural voice, otherwise Google. ----
-  let lockedVoice = null;
-  function resolveVoice(){
-    // Same logic as the placebo reader that sounds natural: prefer any English Google voice.
-    const voices = window.speechSynthesis.getVoices();
-    const isEn = x => x.lang && x.lang.toLowerCase().startsWith('en');
-    lockedVoice =
-         voices.find(x => isEn(x) && /google/i.test(x.name))   // English Google voice — the natural one in Chrome
-      || voices.find(isEn)                                      // any English voice
-      || voices[0] || null;
+  function setSpeed(l, s){
+    state[l].rate = s;
+    document.querySelectorAll('#panel-'+l+' .spd').forEach(function(b){
+      b.classList.toggle('active', parseFloat(b.dataset.s)===s);
+    });
+    if(state[l].playing){
+      var resume = state[l].ci;
+      window.speechSynthesis.cancel(); state[l].paused=false;
+      setStatus(l, nowReading(l));
+      setTimeout(function(){ speakFrom(l, resume); }, 80);
+    }
   }
-  // voices load asynchronously — resolve as soon as they arrive
-  window.speechSynthesis.onvoiceschanged = resolveVoice;
-  resolveVoice();
-  setTimeout(resolveVoice, 400);
-  setTimeout(resolveVoice, 1200);
-  // stop speech if user closes/navigates
-  window.addEventListener('beforeunload', ()=>window.speechSynthesis.cancel());
+
+  window.addEventListener('beforeunload', function(){ window.speechSynthesis.cancel(); });
 </script>
 
 </body>
