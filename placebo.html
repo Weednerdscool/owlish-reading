@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Graded Reading &mdash; The Placebo Effect | Owlish English</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f6f2e9;
+    --ink:#22201c;
+    --muted:#6b6358;
+    --line:#d8cfbe;
+    --card:#fffdf8;
+    --accent:#2b6b5e;          /* default, overridden per level */
+    --accent-soft:#e4ede9;
+    --shadow:0 1px 0 rgba(0,0,0,.04), 0 12px 30px -18px rgba(40,30,10,.35);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:
+      radial-gradient(circle at 12% -10%, #fbf7ee 0, transparent 45%),
+      radial-gradient(circle at 100% 0, #f0eadc 0, transparent 40%),
+      var(--paper);
+    color:var(--ink);
+    font-family:"Newsreader",Georgia,serif;
+    font-size:18px;line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+    padding:0 18px 90px;
+  }
+  .wrap{max-width:780px;margin:0 auto}
+
+  /* Masthead */
+  header.mast{padding:38px 0 18px;border-bottom:2px solid var(--ink);margin-bottom:4px}
+  .brand{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+  h1.title{font-family:"Fraunces",serif;font-weight:600;font-size:clamp(30px,6vw,46px);line-height:1.05;margin:.18em 0 .15em;letter-spacing:-.01em}
+  .kicker{font-family:"Newsreader",serif;font-style:italic;color:var(--muted);font-size:19px}
+
+  /* Tabs */
+  .tabs{position:sticky;top:0;z-index:20;display:flex;gap:6px;flex-wrap:wrap;
+    background:linear-gradient(var(--paper) 70%, rgba(246,242,233,0));padding:14px 0 12px;margin-top:6px}
+  .tab{
+    font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:500;letter-spacing:.05em;
+    border:1.5px solid var(--ink);background:transparent;color:var(--ink);
+    padding:8px 15px;border-radius:999px;cursor:pointer;transition:all .18s ease;
+  }
+  .tab:hover{background:var(--ink);color:var(--paper)}
+  .tab.active{color:#fff;border-color:transparent}
+  .tab[data-l="A1"].active{background:#c2603a}
+  .tab[data-l="A2"].active{background:#c9942f}
+  .tab[data-l="B1"].active{background:#2f7d5b}
+  .tab[data-l="C1"].active{background:#2f6f8f}
+  .tab[data-l="C2"].active{background:#5b4b8a}
+
+  .panel{display:none;animation:fade .35s ease}
+  .panel.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  .levelbadge{display:inline-flex;align-items:center;gap:8px;font-family:"IBM Plex Mono",monospace;
+    font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#fff;background:var(--accent);
+    padding:4px 12px;border-radius:6px;margin:22px 0 2px}
+
+  /* Player */
+  .player{
+    background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:16px 18px;margin:14px 0 26px;box-shadow:var(--shadow);
+  }
+  .player-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .pbtn{
+    font-family:"IBM Plex Mono",monospace;font-size:14px;font-weight:500;cursor:pointer;
+    border:1.5px solid var(--accent);color:#fff;background:var(--accent);
+    padding:9px 16px;border-radius:9px;transition:transform .1s ease,opacity .15s ease;
+  }
+  .pbtn:active{transform:translateY(1px)}
+  .pbtn.ghost{background:transparent;color:var(--accent)}
+  .pbtn:disabled{opacity:.4;cursor:default}
+  .speeds{display:flex;gap:4px;margin-left:auto;align-items:center}
+  .speeds .lbl{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted);letter-spacing:.1em;margin-right:2px}
+  .spd{
+    font-family:"IBM Plex Mono",monospace;font-size:12px;cursor:pointer;border:1px solid var(--line);
+    background:#fff;color:var(--muted);padding:6px 9px;border-radius:7px;transition:all .15s ease;
+  }
+  .spd.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .status{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--muted);margin-top:10px;letter-spacing:.02em}
+
+  /* Article */
+  .article{font-size:19px}
+  .article h2{font-family:"Fraunces",serif;font-weight:600;font-size:26px;margin:0 0 .4em;line-height:1.15}
+  .article p{margin:0 0 1em}
+  .tts-word{border-radius:3px;transition:background .08s linear}
+  .tts-word.reading{background:var(--accent);color:#fff;padding:0 1px}
+
+  /* Sections */
+  .sec-h{font-family:"Fraunces",serif;font-weight:600;font-size:21px;margin:34px 0 12px;
+    padding-bottom:7px;border-bottom:1px solid var(--line);display:flex;align-items:baseline;gap:9px}
+  .sec-h .n{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--accent);letter-spacing:.1em}
+
+  table.vocab{width:100%;border-collapse:collapse;font-size:16px;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  table.vocab th{background:var(--accent);color:#fff;font-family:"IBM Plex Mono",monospace;font-weight:500;
+    font-size:12px;letter-spacing:.06em;text-align:left;padding:9px 12px}
+  table.vocab td{padding:9px 12px;border-top:1px solid var(--line);vertical-align:top}
+  table.vocab td.w{font-weight:600;white-space:nowrap}
+  table.vocab td.pos{font-style:italic;color:var(--muted);font-size:14px;white-space:nowrap}
+  table.vocab tr:nth-child(even) td{background:rgba(0,0,0,.015)}
+
+  ol.comp{padding-left:22px;margin:6px 0}
+  ol.comp li{margin:0 0 16px;padding-left:4px}
+  ol.comp textarea{
+    width:100%;margin-top:8px;min-height:54px;resize:vertical;
+    border:1px solid var(--line);border-radius:8px;background:#fffef9;
+    font-family:"Newsreader",serif;font-size:16px;padding:9px 11px;color:var(--ink);line-height:1.5;
+  }
+  ol.comp textarea:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+
+  /* Source */
+  .source{background:#efe8d8;border:1px dashed var(--line);border-radius:12px;padding:14px 16px;margin:36px 0 8px;
+    font-size:14px;color:var(--muted);line-height:1.55}
+  .source b{color:var(--ink);font-weight:600}
+  .source a{color:var(--accent);word-break:break-all}
+
+  /* Print btn */
+  .printbar{position:fixed;right:18px;bottom:18px;z-index:40}
+  .printbar button{font-family:"IBM Plex Mono",monospace;font-size:13px;cursor:pointer;border:none;
+    background:var(--ink);color:var(--paper);padding:12px 18px;border-radius:999px;box-shadow:var(--shadow)}
+
+  .note{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted);text-align:center;margin-top:30px;letter-spacing:.03em}
+
+  @media print{
+    .tabs,.printbar,.player,.note{display:none!important}
+    .panel{display:none!important}
+    .panel.active{display:block!important}
+    body{background:#fff;font-size:12pt;padding:0}
+    .source{background:#fff}
+    .tts-word.reading{background:none;color:inherit}
+  }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+
+  <header class="mast">
+    <div class="brand">Owlish English &nbsp;&middot;&nbsp; Graded Reading</div>
+    <h1 class="title">Can a Sugar Pill Really Heal You?</h1>
+    <div class="kicker">One article, three levels &mdash; read along, listen, and answer.</div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-l="A2" onclick="show('A2')">A2</button>
+    <button class="tab" data-l="B1" onclick="show('B1')">B1</button>
+    <button class="tab" data-l="C1" onclick="show('C1')">C1</button>
+  </nav>
+
+  <section class="panel active" id="panel-A2" style="--accent:#c9942f;--accent-soft:#f3e8cf">
+    <span class="levelbadge">A2 · Elementary</span>
+    <div class="player">
+      <div class="player-row">
+        <button class="pbtn" id="play-A2" onclick="toggle('A2')">&#9654; Play</button>
+        <button class="pbtn ghost" onclick="stop('A2')">&#9632; Stop</button>
+        <div class="speeds">
+          <span class="lbl">SPEED</span>
+          <button class="spd" data-s="0.7" onclick="setSpeed('A2',0.7)">0.7&times;</button>
+          <button class="spd active" data-s="0.85" onclick="setSpeed('A2',0.85)">0.85&times;</button>
+          <button class="spd" data-s="1" onclick="setSpeed('A2',1)">1&times;</button>
+          <button class="spd" data-s="1.10" onclick="setSpeed('A2',1.10)">1.10&times;</button>
+        </div>
+      </div>
+      <div class="status" id="status-A2">Press Play to listen and read along.</div>
+    </div>
+
+    <div class="article" id="article-A2">
+      <h2>What Is a Placebo?</h2><p>Sometimes doctors give patients a pill with no medicine inside. This is called a placebo. It looks like a real pill. But it has no active ingredients.</p><p>Something strange happens. Many patients feel better after taking a placebo. Their pain goes away. Their mood improves. But the pill did nothing &mdash; the body healed itself.</p><p style="font-family:'Fraunces',serif;font-weight:600;font-size:19px;margin:20px 0 6px;line-height:1.2">Why Does It Work?</p><p>The brain is very powerful. When you believe a treatment will help you, your brain releases chemicals. These chemicals can reduce pain and improve your mood. This is called the placebo effect.</p><p>The relationship between a doctor and a patient is also important. When a doctor is kind and positive, patients feel better &mdash; even without real medicine.</p><p style="font-family:'Fraunces',serif;font-weight:600;font-size:19px;margin:20px 0 6px;line-height:1.2">Is This Honest?</p><p>In the past, some people thought placebos were dishonest. But today, scientists have found something interesting. Patients can take a placebo and know it is a placebo. And it still works.</p><p>This shows us something important. Healing is not only about medicine. It is also about belief, care, and trust.</p>
+    </div>
+
+    <div class="sec-h"><span class="n">VOCAB</span> Key Words</div>
+    <table class="vocab"><tr><th>Word</th><th>Type</th><th>Meaning</th></tr><tr><td class="w">placebo</td><td class="pos">noun</td><td>a pill or treatment with no real medicine inside</td></tr><tr><td class="w">ingredients</td><td class="pos">noun</td><td>the things that are inside a medicine or food</td></tr><tr><td class="w">heal</td><td class="pos">verb</td><td>to get better from an illness or injury</td></tr><tr><td class="w">release</td><td class="pos">verb</td><td>to let something out; the brain releases chemicals</td></tr><tr><td class="w">chemical</td><td class="pos">noun</td><td>a substance made in the body or a laboratory</td></tr><tr><td class="w">honest</td><td class="pos">adj.</td><td>telling the truth; not lying or tricking someone</td></tr><tr><td class="w">belief</td><td class="pos">noun</td><td>when you think something is true or will happen</td></tr><tr><td class="w">treatment</td><td class="pos">noun</td><td>something a doctor gives you to help you get better</td></tr></table>
+
+    <div class="sec-h"><span class="n">CHECK</span> Comprehension</div>
+    <ol class="comp"><li>What is a placebo? Use your own words.<textarea></textarea></li><li>What happens in the brain when you take a placebo?<textarea></textarea></li><li>Can a placebo work if you know it has no medicine? What does the article say?<textarea></textarea></li><li>What does the article say is important for healing &mdash; not just medicine?<textarea></textarea></li></ol>
+  </section>
+
+  <section class="panel" id="panel-B1" style="--accent:#2f7d5b;--accent-soft:#d9ece2">
+    <span class="levelbadge">B1 · Intermediate</span>
+    <div class="player">
+      <div class="player-row">
+        <button class="pbtn" id="play-B1" onclick="toggle('B1')">&#9654; Play</button>
+        <button class="pbtn ghost" onclick="stop('B1')">&#9632; Stop</button>
+        <div class="speeds">
+          <span class="lbl">SPEED</span>
+          <button class="spd" data-s="0.7" onclick="setSpeed('B1',0.7)">0.7&times;</button>
+          <button class="spd active" data-s="0.85" onclick="setSpeed('B1',0.85)">0.85&times;</button>
+          <button class="spd" data-s="1" onclick="setSpeed('B1',1)">1&times;</button>
+          <button class="spd" data-s="1.10" onclick="setSpeed('B1',1.10)">1.10&times;</button>
+        </div>
+      </div>
+      <div class="status" id="status-B1">Press Play to listen and read along.</div>
+    </div>
+
+    <div class="article" id="article-B1">
+      <h2>What Is a Placebo?</h2><p>Imagine you are in a clinical trial for a new headache medication. After a few days, your headaches disappear and you feel much better. But then you find out the pill you were taking had no medicine inside &mdash; it was just a sugar pill. This is called the placebo effect, and it is one of the most surprising phenomena in modern medicine.</p><p>A placebo is a treatment with no active ingredients. It can be a sugar pill, a salt water injection, or even a fake surgery. What makes it remarkable is that patients often improve after receiving one &mdash; even when they know it contains nothing therapeutic.</p><p style="font-family:'Fraunces',serif;font-weight:600;font-size:19px;margin:20px 0 6px;line-height:1.2">The Science Behind It</p><p>The placebo effect is not simply a trick of the mind. When a patient expects to feel better, the brain actually releases natural chemicals, including endorphins and dopamine, which reduce pain and improve mood. Brain scans show that these changes are real and measurable.</p><p>The way a placebo is given also matters. A placebo injection works better than a placebo pill. A pill that looks strong and professional works better than a plain one. This shows that the whole experience of receiving treatment plays a role in how the body responds.</p><p style="font-family:'Fraunces',serif;font-weight:600;font-size:19px;margin:20px 0 6px;line-height:1.2">Placebos in Pain and Mental Health</p><p>Pain is one of the conditions most affected by the placebo effect. In some studies, a placebo has reduced pain as effectively as strong painkillers like morphine. This is because the brain produces its own natural pain-relieving chemicals when it expects relief.</p><p>Mental health is also strongly influenced by expectation. In some antidepressant trials, up to 50% of patients in the placebo group reported significant improvement. This raises important questions about whether some medications work mainly because patients believe they will.</p><p style="font-family:'Fraunces',serif;font-weight:600;font-size:19px;margin:20px 0 6px;line-height:1.2">The Ethics of Placebos</p><p>For a long time, doctors believed that giving placebos was dishonest. However, recent research has changed this view. Studies show that placebos can work even when patients know they are taking one. These are called open-label placebos, and they suggest that the ritual of treatment &mdash; the care, the attention, the hope &mdash; is enough to produce real improvements.</p><p>This has important implications for medicine. The doctor-patient relationship, the environment of care, and the way a treatment is explained all influence how well a patient responds. Healing, it seems, is not only about the drug &mdash; it is also about the human experience surrounding it.</p><p style="font-family:'Fraunces',serif;font-weight:600;font-size:19px;margin:20px 0 6px;line-height:1.2">What This Means for Alternative Medicine</p><p>Studies have found that fake acupuncture &mdash; where needles are placed randomly and do not penetrate the skin &mdash; can produce similar benefits to real acupuncture. Critics argue this means acupuncture has no specific effect. Supporters argue the opposite: if patients feel better, the outcome is real, even if the mechanism is not fully understood.</p><p>What is clear is that the mind has a profound influence on the body. Whether through belief, expectation, or the comfort of being cared for, the placebo effect reminds us that medicine is as much a human practice as it is a scientific one.</p>
+    </div>
+
+    <div class="sec-h"><span class="n">VOCAB</span> Key Words</div>
+    <table class="vocab"><tr><th>Word / Phrase</th><th>Type</th><th>Meaning</th></tr><tr><td class="w">clinical trial</td><td class="pos">noun phr.</td><td>a scientific study that tests a new medicine on real patients</td></tr><tr><td class="w">phenomenon</td><td class="pos">noun</td><td>something that happens and is striking, especially in science</td></tr><tr><td class="w">endorphins</td><td class="pos">noun</td><td>natural brain chemicals that reduce pain and lift mood</td></tr><tr><td class="w">dopamine</td><td class="pos">noun</td><td>a brain chemical linked to reward, motivation, and pleasure</td></tr><tr><td class="w">therapeutic</td><td class="pos">adj.</td><td>having a healing or positive effect on body or mind</td></tr><tr><td class="w">analgesia</td><td class="pos">noun</td><td>pain relief without loss of consciousness</td></tr><tr><td class="w">open-label placebo</td><td class="pos">noun phr.</td><td>a placebo the patient knows is a placebo &mdash; that still works</td></tr><tr><td class="w">sham surgery</td><td class="pos">noun phr.</td><td>a fake operation used in research; the preparation but no real procedure</td></tr><tr><td class="w">potency</td><td class="pos">noun</td><td>the strength or power of something, especially a treatment</td></tr><tr><td class="w">therapeutic alliance</td><td class="pos">noun phr.</td><td>the trusting doctor&ndash;patient bond that helps treatment work</td></tr></table>
+
+    <div class="sec-h"><span class="n">CHECK</span> Comprehension</div>
+    <ol class="comp"><li>What does the brain do when a person takes a placebo? Name at least two chemicals involved.<textarea></textarea></li><li>Why does a placebo injection work better than a placebo pill? What does this tell us?<textarea></textarea></li><li>What is an open-label placebo? Why is it surprising that it works?<textarea></textarea></li><li>What does the antidepressant trial data suggest about how some psychiatric drugs work?<textarea></textarea></li><li>The article discusses fake acupuncture. What do critics say? What do supporters say?<textarea></textarea></li><li>In your own words, what does it mean that the doctor&ndash;patient relationship is a kind of treatment in itself?<textarea></textarea></li></ol>
+  </section>
+
+  <section class="panel" id="panel-C1" style="--accent:#2f6f8f;--accent-soft:#dbe9f0">
+    <span class="levelbadge">C1 · Advanced</span>
+    <div class="player">
+      <div class="player-row">
+        <button class="pbtn" id="play-C1" onclick="toggle('C1')">&#9654; Play</button>
+        <button class="pbtn ghost" onclick="stop('C1')">&#9632; Stop</button>
+        <div class="speeds">
+          <span class="lbl">SPEED</span>
+          <button class="spd" data-s="0.7" onclick="setSpeed('C1',0.7)">0.7&times;</button>
+          <button class="spd active" data-s="0.85" onclick="setSpeed('C1',0.85)">0.85&times;</button>
+          <button class="spd" data-s="1" onclick="setSpeed('C1',1)">1&times;</button>
+          <button class="spd" data-s="1.10" onclick="setSpeed('C1',1.10)">1.10&times;</button>
+        </div>
+      </div>
+      <div class="status" id="status-C1">Press Play to listen and read along.</div>
+    </div>
+
+    <div class="article" id="article-C1">
+      <h2>A Sugar Pill That Heals</h2><p>Consider the following scenario: a patient enrolled in a clinical trial for a new headache medication takes her assigned pill for several days. Her symptoms improve markedly &mdash; the pain diminishes, her concentration returns, and her quality of life recovers. At the end of the trial, she learns she was assigned to the placebo group. The pill contained no active pharmaceutical ingredient whatsoever. And yet, by any measurable standard, it worked.</p><p>This is the placebo effect &mdash; one of the most studied, most debated, and most poorly understood phenomena in modern medicine. It challenges the reductive assumption that healing is primarily a chemical event, and forces us to confront the extent to which belief, context, and expectation are themselves biological forces.</p><p style="font-family:'Fraunces',serif;font-weight:600;font-size:19px;margin:20px 0 6px;line-height:1.2">The Neurobiological Reality of Belief</p><p>The placebo effect is not, as it is sometimes dismissed, a matter of patients simply imagining improvement. Functional MRI studies have demonstrated that placebo treatments activate the same neural pathways as their pharmacologically active counterparts. In Parkinson&rsquo;s patients, placebo administration triggers measurable dopamine release in the striatum &mdash; precisely the mechanism that active medication targets. In pain studies, placebos stimulate the release of endogenous opioids, producing analgesia that is pharmacologically real, if not chemically induced.</p><p>Two distinct psychological mechanisms are thought to drive this response. The first is classical conditioning: patients who have previously responded to a given treatment form neurological associations between that treatment&rsquo;s appearance or ritual and physiological relief. The second, and arguably more powerful, is expectation. When a patient genuinely anticipates improvement, the brain initiates a cascade of preparatory physiological changes that can themselves produce the anticipated outcome.</p><p style="font-family:'Fraunces',serif;font-weight:600;font-size:19px;margin:20px 0 6px;line-height:1.2">The Potency Variables</p><p>What makes the placebo effect particularly instructive is that its magnitude varies systematically with contextual factors that have nothing to do with pharmacology. Placebo injections outperform placebo pills. Capsules outperform tablets. Branded, professional-looking preparations outperform generic ones. More remarkably, the manner and confidence with which a clinician presents a treatment significantly predicts patient response. A doctor who communicates optimism, takes time to listen, and establishes a sense of therapeutic alliance amplifies the placebo response in ways that can be quantified.</p><p>This finding has direct implications for clinical practice. It suggests that the consultation itself &mdash; its tone, its duration, its emotional quality &mdash; functions as a co-intervention alongside whatever pharmacological treatment is prescribed. Medicine, in this view, is never purely technical.</p><p style="font-family:'Fraunces',serif;font-weight:600;font-size:19px;margin:20px 0 6px;line-height:1.2">The Open-Label Paradox</p><p>Perhaps the most counterintuitive finding in placebo research is the open-label placebo: a placebo given to patients who are explicitly told it contains no active ingredient. Classical theory would predict that informed patients should be immune to the effect, since the deception that was assumed to be its mechanism has been eliminated. Yet controlled studies have consistently found that open-label placebos still produce statistically significant improvements in conditions ranging from irritable bowel syndrome to chronic lower back pain.</p><p>This finding has two major implications. First, it effectively decouples the placebo effect from deception, removing the primary ethical objection to its clinical use. Second, it suggests that the mechanism is not primarily cognitive &mdash; it is not the belief that one is receiving real medicine that drives the response. Rather, it appears to be the ritual of treatment itself: the act of being attended to, the structure of the therapeutic encounter, the expectation embedded in the healthcare setting.</p><p style="font-family:'Fraunces',serif;font-weight:600;font-size:19px;margin:20px 0 6px;line-height:1.2">Implications for Alternative Medicine</p><p>The placebo question is particularly sharp in the context of alternative medicine. Controlled trials of acupuncture have repeatedly shown that sham acupuncture &mdash; needles inserted randomly or not at all &mdash; produces outcomes comparable to veridical acupuncture. Sceptics interpret this as evidence that acupuncture has no specific therapeutic effect beyond placebo. Practitioners of traditional medicine, however, contest this framing. If the outcomes are equivalent, they argue, and if both responses are neurobiologically real, then the distinction between placebo and treatment may be less meaningful than Western evidence-based medicine assumes.</p><p>This debate surfaces a deeper epistemological tension: what makes a treatment legitimate? Is it the mechanism &mdash; the presence of a specific, identifiable causal pathway? Or is it the outcome &mdash; measurable, reproducible improvement in patient well-being? The answer has significant consequences for how we evaluate traditional and integrative medicine systems, particularly those, like Korean medicine, that have operated for centuries outside the randomised controlled trial framework.</p><p style="font-family:'Fraunces',serif;font-weight:600;font-size:19px;margin:20px 0 6px;line-height:1.2">Healing as a Human Practice</p><p>What the placebo literature ultimately suggests is that medicine has been operating with an impoverished model of what healing is. The biomedical paradigm &mdash; identify the pathology, administer the specific intervention, measure the outcome &mdash; captures only part of what drives patient recovery. Context, meaning, relationship, and expectation are not peripheral to the therapeutic process; they are constitutive of it.</p><p>Harnessing the placebo effect ethically and deliberately is not a retreat from scientific medicine. It is an expansion of it &mdash; an acknowledgement that the brain&rsquo;s capacity to initiate physiological change in response to meaning and expectation is itself a clinical resource. The practitioner who communicates with warmth, who structures the encounter to inspire confidence, who takes the patient&rsquo;s experience seriously, is not simply being kind. They are practising medicine in its fullest sense.</p>
+    </div>
+
+    <div class="sec-h"><span class="n">VOCAB</span> Key Words</div>
+    <table class="vocab"><tr><th>Word / Phrase</th><th>Type</th><th>Meaning</th></tr><tr><td class="w">reductive</td><td class="pos">adj.</td><td>oversimplifying; treating a complex thing as if it had one simple cause</td></tr><tr><td class="w">neurobiological</td><td class="pos">adj.</td><td>relating to the biological processes of the nervous system</td></tr><tr><td class="w">endogenous opioids</td><td class="pos">noun phr.</td><td>pain-relieving chemicals the body makes itself</td></tr><tr><td class="w">classical conditioning</td><td class="pos">noun phr.</td><td>learning automatic associations between a stimulus and a response</td></tr><tr><td class="w">co-intervention</td><td class="pos">noun</td><td>a second factor acting alongside the main treatment</td></tr><tr><td class="w">counterintuitive</td><td class="pos">adj.</td><td>the opposite of what you would naturally expect</td></tr><tr><td class="w">decouple</td><td class="pos">verb</td><td>to separate two things once thought to be connected</td></tr><tr><td class="w">veridical</td><td class="pos">adj.</td><td>truthful, genuine; real and correctly performed</td></tr><tr><td class="w">epistemological</td><td class="pos">adj.</td><td>about what counts as valid knowledge or evidence</td></tr><tr><td class="w">constitutive</td><td class="pos">adj.</td><td>forming an essential part of something, not just adding to it</td></tr><tr><td class="w">impoverished</td><td class="pos">adj.</td><td>lacking depth or richness; failing to capture full complexity</td></tr><tr><td class="w">pharmacologically</td><td class="pos">adv.</td><td>in terms of the chemical action of drugs on the body</td></tr></table>
+
+    <div class="sec-h"><span class="n">CHECK</span> Comprehension</div>
+    <ol class="comp"><li>The article says the placebo effect is not patients simply imagining improvement. What evidence supports this?<textarea></textarea></li><li>Explain the difference between conditioning and expectation as mechanisms. Which does the article suggest is more powerful?<textarea></textarea></li><li>What does the open-label placebo imply about the assumption that deception is necessary? What does it suggest the real mechanism is?<textarea></textarea></li><li>The article argues the consultation itself is a co-intervention. What does this mean in practice for how doctors should work?<textarea></textarea></li><li>How does the article frame the sham-acupuncture debate? What deeper epistemological question does it raise?<textarea></textarea></li><li>What does it mean that medicine has used an impoverished model of healing? Do you agree?<textarea></textarea></li></ol>
+  </section>
+
+  <div class="source">
+    <b>Original graded reading by Owlish English.</b> These passages were written as teaching material for English-language learners. They explain the placebo effect, its neurobiology, and the ethical and philosophical questions it raises about healing. The content is original and not reproduced from any external publication.
+  </div>
+
+  <div class="note">Tip: open this file in Chrome or Edge for the most natural speech. Listening reads only the currently selected level.</div>
+
+</div>
+
+<div class="printbar"><button onclick="window.print()">&#9112; Print this level</button></div>
+
+<script>
+  const LEVELS = ["A2","B1","C1"];
+  const state = {};
+  LEVELS.forEach(l => state[l] = { playing:false, rate:0.85, idx:0, words:null });
+  let current = "A2";
+
+  function show(l){
+    if(current !== l) stop(current);
+    current = l;
+    LEVELS.forEach(x=>{
+      document.getElementById("panel-"+x).classList.toggle("active", x===l);
+      document.querySelector('.tab[data-l="'+x+'"]').classList.toggle("active", x===l);
+    });
+  }
+
+  function setSpeed(l, s){
+    state[l].rate = s;
+    document.querySelectorAll('#panel-'+l+' .spd').forEach(b=>{
+      b.classList.toggle('active', parseFloat(b.dataset.s)===s);
+    });
+    if(state[l].playing){ // restart at new speed from current sentence start
+      const resumeFrom = state[l].idx;
+      stop(l);
+      start(l, resumeFrom);
+    }
+  }
+
+  function wrapWords(l){
+    const c = document.getElementById('article-'+l);
+    if(c.dataset.wrapped) return;
+    const walker = document.createTreeWalker(c, NodeFilter.SHOW_TEXT, null);
+    const nodes = [];
+    let n; while(n = walker.nextNode()){ if(n.textContent.trim()) nodes.push(n); }
+    nodes.forEach(tn=>{
+      const frag = document.createDocumentFragment();
+      tn.textContent.split(/(\s+)/).forEach(part=>{
+        if(/\S/.test(part)){
+          const sp=document.createElement('span');
+          sp.className='tts-word'; sp.textContent=part;
+          frag.appendChild(sp);
+        } else { frag.appendChild(document.createTextNode(part)); }
+      });
+      tn.parentNode.replaceChild(frag, tn);
+    });
+    c.dataset.wrapped="1";
+    state[l].words = Array.from(c.querySelectorAll('.tts-word'));
+  }
+
+  function buildText(l){
+    // join word spans into a single string; track char offsets -> word index
+    const words = state[l].words;
+    let text=""; const offsets=[];
+    words.forEach((w,i)=>{
+      offsets.push(text.length);
+      text += w.textContent + " ";
+    });
+    state[l].offsets = offsets;
+    return text.trim();
+  }
+
+  function clearHL(l){
+    if(state[l].words) state[l].words.forEach(w=>w.classList.remove('reading'));
+  }
+
+  function start(l, fromIdx){
+    if(!('speechSynthesis' in window)){
+      document.getElementById('status-'+l).textContent='Sorry — your browser does not support speech. Try Chrome or Edge.';
+      return;
+    }
+    wrapWords(l);
+    const full = buildText(l);
+    const words = state[l].words;
+    const offsets = state[l].offsets;
+    const startIdx = fromIdx || 0;
+    const startChar = offsets[startIdx] || 0;
+    const text = full.slice(startChar);
+
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = state[l].rate;
+    u.lang = 'en-US';
+    resolveVoice();
+    if(lockedVoice){ u.voice = lockedVoice; u.lang = lockedVoice.lang; }
+
+    u.onboundary = (e)=>{
+      if(e.name && e.name!=='word') return;
+      const abs = startChar + e.charIndex;
+      // find current word index
+      let i = state[l].idx;
+      while(i < offsets.length-1 && offsets[i+1] <= abs) i++;
+      while(i > 0 && offsets[i] > abs) i--;
+      clearHL(l);
+      if(words[i]){ words[i].classList.add('reading'); state[l].idx = i;
+        words[i].scrollIntoView({block:'nearest', behavior:'smooth'}); }
+    };
+    u.onend = ()=>{
+      state[l].playing=false; state[l].idx=0; clearHL(l);
+      document.getElementById('play-'+l).innerHTML='▶ Play';
+      document.getElementById('status-'+l).textContent='Finished. Press Play to read again.';
+    };
+    u.onerror = ()=>{
+      state[l].playing=false;
+      document.getElementById('play-'+l).innerHTML='▶ Play';
+      document.getElementById('status-'+l).textContent='Playback stopped.';
+    };
+
+    window.speechSynthesis.cancel();
+    state[l].utter = u;
+    state[l].playing = true;
+    state[l].idx = startIdx;
+    window.speechSynthesis.speak(u);
+    document.getElementById('play-'+l).innerHTML='❚❚ Pause';
+    document.getElementById('status-'+l).textContent='Voice: '+(lockedVoice?lockedVoice.name:'browser default (no Google voice found)')+'  ·  '+state[l].rate+'×';
+  }
+
+  function pause(l){
+    window.speechSynthesis.pause();
+    state[l].playing=false;
+    document.getElementById('play-'+l).innerHTML='▶ Resume';
+    document.getElementById('status-'+l).textContent='Paused.';
+  }
+
+  // Re-bind Resume: if paused, resume; speechSynthesis.resume works in most browsers
+  function realResume(l){
+    if(window.speechSynthesis.paused){ window.speechSynthesis.resume(); state[l].playing=true;
+      document.getElementById('play-'+l).innerHTML='❚❚ Pause';
+      document.getElementById('status-'+l).textContent='Playing at '+state[l].rate+'× — reading along.';
+    } else { start(l, state[l].idx); }
+  }
+
+  // Override toggle to handle resume cleanly
+  function toggle(l){
+    if(state[l].playing){ pause(l); }
+    else if(window.speechSynthesis.paused){ realResume(l); }
+    else { start(l); }
+  }
+
+  function stop(l){
+    window.speechSynthesis.cancel();
+    state[l].playing=false; state[l].idx=0; clearHL(l);
+    document.getElementById('play-'+l).innerHTML='▶ Play';
+    document.getElementById('status-'+l).textContent='Stopped. Press Play to start again.';
+  }
+
+  // ---- Voice: no menu. Auto-prefers a natural voice, otherwise Google. ----
+  let lockedVoice = null;
+  function resolveVoice(){
+    // Same logic as the placebo reader that sounds natural: prefer any English Google voice.
+    const voices = window.speechSynthesis.getVoices();
+    const isEn = x => x.lang && x.lang.toLowerCase().startsWith('en');
+    lockedVoice =
+         voices.find(x => isEn(x) && /google/i.test(x.name))   // English Google voice — the natural one in Chrome
+      || voices.find(isEn)                                      // any English voice
+      || voices[0] || null;
+  }
+  // voices load asynchronously — resolve as soon as they arrive
+  window.speechSynthesis.onvoiceschanged = resolveVoice;
+  resolveVoice();
+  setTimeout(resolveVoice, 400);
+  setTimeout(resolveVoice, 1200);
+  // stop speech if user closes/navigates
+  window.addEventListener('beforeunload', ()=>window.speechSynthesis.cancel());
+</script>
+
+</body>
+</html>
