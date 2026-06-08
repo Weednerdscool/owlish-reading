@@ -32,7 +32,7 @@
   .lede{font-family:"Newsreader",serif;font-style:italic;color:var(--muted);font-size:20px;margin:0;max-width:60ch}
 
   .count{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.1em;color:var(--muted);
-    text-transform:uppercase;margin:0 0 14px}
+    text-transform:uppercase;margin:0 0 14px;min-height:16px}
 
   .grid{display:grid;gap:18px}
   .card{
@@ -50,7 +50,7 @@
   .go{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--ink);display:inline-flex;align-items:center;gap:6px}
   .card:hover .go{color:#000}
 
-  .empty{background:var(--card);border:1px dashed var(--line);border-radius:16px;padding:26px;color:var(--muted);text-align:center}
+  .msg{background:var(--card);border:1px dashed var(--line);border-radius:16px;padding:26px;color:var(--muted);text-align:center}
 
   footer{margin-top:46px;padding-top:18px;border-top:1px solid var(--line);
     font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.06em;color:var(--muted);text-align:center}
@@ -65,45 +65,98 @@
     <p class="lede">Graded readings with read-aloud audio — choose your level, listen, and answer along.</p>
   </header>
 
-  <p class="count" id="count"></p>
+  <p class="count" id="count">Loading readings…</p>
   <div class="grid" id="grid"></div>
 
   <footer>Owlish English · Reading Library</footer>
 </div>
 
 <script>
-  /* ── To add a new reading: upload its .html file to this repo, then add one entry below. ──
-     title  : shown on the card
-     desc   : one-line description
-     levels : which level badges to show
-     file   : the .html filename in this repo                                                */
-  const READINGS = [
-    {
-      title: "Can Kimchi Save Us From Microplastics?",
-      desc:  "A science-and-opinion read on the viral kimchi study — and why no diet fixes a plastic problem.",
-      levels: ["a1","a2","b1","c1","c2"],
-      file:  "kimchi.html"
-    }
-    // , { title:"…", desc:"…", levels:["a2","b1","c1"], file:"next-reading.html" }
+  /* ───────────────────────────────────────────────────────────────────────
+     AUTO-DETECTING LIBRARY
+     This page reads the repo's file list and builds a card for every reading
+     it finds. To add a new reading: just upload its .html file to this repo.
+     Each reading describes itself with these tags in its <head>:
+         <meta name="reading-title"  content="…">
+         <meta name="reading-desc"   content="…">
+         <meta name="reading-levels" content="A2,B1,C1">
+         <meta name="reading-order"  content="2">   (optional; lower = higher up)
+     You never need to edit this file again.
+     ─────────────────────────────────────────────────────────────────────── */
+  const OWNER = "owlenglish";
+  const REPO  = "owlish-reading";
+
+  // Used only if GitHub's file list can't be reached (offline, rate-limited, etc.)
+  const FALLBACK = [
+    { title:"Can Kimchi Save Us From Microplastics?",
+      desc:"A science-and-opinion read on the viral kimchi study — and why no diet fixes a plastic problem.",
+      levels:["a1","a2","b1","c1","c2"], file:"kimchi.html", order:1 },
+    { title:"Can a Sugar Pill Really Heal You?",
+      desc:"The placebo effect — how belief, expectation, and care produce real, measurable healing.",
+      levels:["a2","b1","c1"], file:"placebo.html", order:2 }
   ];
 
-  const grid = document.getElementById('grid');
-  const count = document.getElementById('count');
-  if(!READINGS.length){
-    count.textContent = '';
-    grid.innerHTML = '<div class="empty">No readings yet — your first one will appear here.</div>';
-  } else {
-    count.textContent = READINGS.length + (READINGS.length===1 ? ' reading' : ' readings');
-    grid.innerHTML = READINGS.map(r => `
-      <a class="card" href="${r.file}">
-        <h2>${r.title}</h2>
-        <p>${r.desc}</p>
-        <div class="levels">
-          ${r.levels.map(l=>`<span class="lv ${l}">${l.toUpperCase()}</span>`).join('')}
-          <span class="go">Open &rarr;</span>
-        </div>
-      </a>`).join('');
+  const grid = document.getElementById("grid");
+  const count = document.getElementById("count");
+
+  function render(readings){
+    if(!readings.length){
+      count.textContent = "";
+      grid.innerHTML = '<div class="msg">No readings yet — upload one to this repo and it will appear here.</div>';
+      return;
+    }
+    readings.sort(function(a,b){ return (a.order||999)-(b.order||999) || a.title.localeCompare(b.title); });
+    count.textContent = readings.length + (readings.length===1 ? " reading" : " readings");
+    grid.innerHTML = readings.map(function(r){
+      return '<a class="card" href="'+r.file+'">'
+           +   '<h2>'+r.title+'</h2>'
+           +   (r.desc ? '<p>'+r.desc+'</p>' : '')
+           +   '<div class="levels">'
+           +     (r.levels||[]).map(function(l){ return '<span class="lv '+l+'">'+l.toUpperCase()+'</span>'; }).join('')
+           +     '<span class="go">Open &rarr;</span>'
+           +   '</div>'
+           + '</a>';
+    }).join("");
   }
+
+  async function readFileMeta(file){
+    try{
+      const r = await fetch(file.download_url);
+      const html = await r.text();
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      const m = function(n){ var el = doc.querySelector('meta[name="'+n+'"]'); return el ? el.content : ""; };
+      return {
+        title:  m("reading-title") || (doc.title || file.name).replace(/\s*\|.*$/,""),
+        desc:   m("reading-desc"),
+        levels: (m("reading-levels")||"").split(",").map(function(s){return s.trim().toLowerCase();}).filter(Boolean),
+        order:  parseInt(m("reading-order")) || 999,
+        file:   file.name
+      };
+    }catch(e){
+      return { title:file.name.replace(/\.html$/i,""), desc:"", levels:[], order:999, file:file.name };
+    }
+  }
+
+  async function load(){
+    try{
+      const res = await fetch("https://api.github.com/repos/"+OWNER+"/"+REPO+"/contents/",
+                              { headers:{ "Accept":"application/vnd.github+json" } });
+      if(!res.ok) throw new Error("list failed");
+      const items = await res.json();
+      const files = items.filter(function(it){
+        return it.type === "file"
+            && /\.html$/i.test(it.name)
+            && it.name.toLowerCase() !== "index.html";
+      });
+      if(!files.length){ render([]); return; }
+      const readings = await Promise.all(files.map(readFileMeta));
+      render(readings);
+    }catch(e){
+      render(FALLBACK);  // GitHub unreachable — show built-in list so the page is never empty
+    }
+  }
+
+  load();
 </script>
 </body>
 </html>

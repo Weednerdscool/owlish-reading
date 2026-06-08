@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Graded Reading — Kimchi &amp; Microplastics | Owlish English</title>
+<meta name="reading-title" content="Can Kimchi Save Us From Microplastics?">
+<meta name="reading-desc" content="A science-and-opinion read on the viral kimchi study — and why no diet fixes a plastic problem.">
+<meta name="reading-levels" content="A1,A2,B1,C1,C2">
+<meta name="reading-order" content="1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -564,14 +568,13 @@
   // ---- Voice: no menu. Auto-prefers a natural voice, otherwise Google. ----
   let lockedVoice = null;
   function resolveVoice(){
-    const v = window.speechSynthesis.getVoices().filter(x=>/^en[-_]?/i.test(x.lang));
+    // Same logic as the placebo reader that sounds natural: prefer any English Google voice.
+    const voices = window.speechSynthesis.getVoices();
+    const isEn = x => x.lang && x.lang.toLowerCase().startsWith('en');
     lockedVoice =
-         v.find(x=>/natural|neural|online/i.test(x.name))      // Edge's neural voices — most human
-      || v.find(x=>/google us english/i.test(x.name))          // the Google voice we chose (Chrome)
-      || v.find(x=>/google/i.test(x.name))
-      || v.find(x=>/enhanced|premium|siri/i.test(x.name))      // downloaded Mac voices
-      || v.find(x=>/en[-_]US/i.test(x.lang) && !/compact/i.test(x.name))
-      || null;                                                  // null => browser default (never force a robotic one)
+         voices.find(x => isEn(x) && /google/i.test(x.name))   // English Google voice — the natural one in Chrome
+      || voices.find(isEn)                                      // any English voice
+      || voices[0] || null;
   }
   // voices load asynchronously — resolve as soon as they arrive
   window.speechSynthesis.onvoiceschanged = resolveVoice;
